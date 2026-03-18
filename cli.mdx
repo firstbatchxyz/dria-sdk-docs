@@ -1,0 +1,186 @@
+---
+title: Using the Network
+description: "Use the Dria CLI to run inference, batch processing, and multi-turn conversations"
+---
+
+## Introduction
+
+The **Dria CLI** (`@dria/cli`) lets you use the Dria decentralized inference network from the command line. Generate text, process images and audio, run batch jobs, hold multi-turn conversations, and interact with the community — all powered by the distributed network of node operators.
+
+## Installation
+
+```bash
+npm install -g @dria/cli
+```
+
+Or use without installing:
+
+```bash
+npx @dria/cli generate -m qwen3.5:9b "hello"
+```
+
+<Info>Requires Node.js 18.0.0 or higher.</Info>
+
+## Getting Started
+
+### 1. Initialize Your Wallet
+
+```bash
+dria init
+```
+
+This generates a new Ethereum wallet, registers it with the Dria API, and saves your config to `~/.dria/config.json`. You'll receive an API key for authenticating requests.
+
+To import an existing wallet:
+
+```bash
+dria init --private-key 0xYOUR_PRIVATE_KEY
+```
+
+### 2. Add Credits
+
+```bash
+dria topup --amount 10
+```
+
+This deposits USDC credits via the x402 payment protocol (gasless EIP-712 signed transfer on Base network). Check your balance anytime:
+
+```bash
+dria balance
+```
+
+### 3. Start Generating
+
+```bash
+dria generate -m qwen3.5:9b "explain quantum computing in one sentence"
+```
+
+## Commands
+
+### `dria generate`
+
+Single-prompt text generation with streaming output.
+
+```bash
+# Basic text generation
+dria generate -m qwen3.5:9b "hello"
+
+# Vision — describe an image
+dria generate -m lfm2.5-vl:1.6b "describe this" -a image.jpg
+
+# Audio input
+dria generate -m lfm2.5-audio:1.5b "transcribe this" -a recording.wav
+
+# Structured output with quick schema
+dria generate -m qwen3.5:9b "extract name and email" --schema 'name,email'
+
+# Structured output with typed fields
+dria generate -m qwen3.5:9b "extract data" --schema 'name,email,age:integer,score:number,active:boolean'
+
+# Structured output with JSON schema file
+dria generate -m qwen3.5:9b "extract" --schema-file schema.json
+
+# Pipe from stdin
+echo "hello" | dria generate -m qwen3.5:9b
+
+# JSON output (machine-readable)
+dria generate -m qwen3.5:9b "hello" --json
+```
+
+### `dria batch`
+
+Parallel batch generation from a JSONL file. Automatically distributes work across available models proportionally by node count, retries with exponential backoff, and falls back to alternate models on failure.
+
+```bash
+# Auto-select models based on content type
+dria batch prompts.jsonl -o results.jsonl
+
+# Use a specific model with concurrency of 20
+dria batch -m qwen3.5:9b prompts.jsonl -o results.jsonl -c 20
+```
+
+### `dria chat`
+
+Multi-turn conversations with persistent history stored in `~/.dria/chats/`.
+
+```bash
+# Start a new conversation
+dria chat -m qwen3.5:9b "What is Rust?"
+
+# Continue an existing conversation by ID
+dria chat abc123ef "Tell me more about ownership"
+
+# Read conversation history
+dria chat abc123ef
+
+# List all conversations
+dria chat list
+
+# Delete a conversation
+dria chat delete abc123ef
+```
+
+### `dria models`
+
+List all available models on the network with their node counts.
+
+```bash
+dria models
+```
+
+### `dria post` & `dria feed`
+
+Interact with community channels (messages are bridged to Discord).
+
+```bash
+# Post a message
+dria post "hello from CLI"
+
+# Post to the requests channel with a custom display name
+dria post "looking for qwen3.5:9b" -c requests -n my-agent
+
+# Read recent messages
+dria feed
+
+# Follow mode — polls every 3 seconds
+dria feed -f
+
+# Read from a specific channel with a limit
+dria feed -c requests -n 10
+```
+
+## Configuration
+
+Config is stored at `~/.dria/config.json` (created by `dria init`). All fields can be overridden with environment variables:
+
+| Field | Env Var | Default | Description |
+|:------|:--------|:--------|:------------|
+| `privateKey` | `DKN_PRIVATE_KEY` | — | Ethereum private key |
+| `apiKey` | `DKN_API_KEY` | — | API key from registration |
+| `apiBase` | `DKN_API_BASE` | `https://inference.dria.co` | API base URL |
+| `network` | `DKN_NETWORK` | `base` | Blockchain network for payments |
+
+## Programmatic Usage
+
+The CLI also exports a `DknClient` class for use in Node.js/TypeScript:
+
+```typescript
+import { DknClient } from '@dria/cli';
+
+const client = new DknClient('dkn_live_...', 'https://inference.dria.co');
+
+const result = await client.generate({
+  model: 'qwen3.5:9b',
+  messages: [{ role: 'user', content: 'hello' }],
+});
+```
+
+## Output Conventions
+
+- Spinners and progress go to **stderr**, data goes to **stdout** — pipe-friendly by default.
+- Use `--json` on any command for raw JSON output with no spinners.
+- No spinners are shown when stdout is piped.
+
+## API Compatibility
+
+The Dria inference API uses the **OpenAI-compatible** `/v1/chat/completions` endpoint format with Server-Sent Events (SSE) for streaming. This makes it easy to integrate with existing tools and libraries that support the OpenAI API format.

@@ -1,134 +1,73 @@
 ---
 title: Selecting Models
-description: "Choose the right models to maximize your earnings"
+description: "Choose the right model for your hardware and maximize your earnings"
 ---
-
-## How to Earn More Points?
-
-Points are updated in real-time at [Dria Edge AI Dashboard](https://dria.co/edge-ai).
-
-<Steps>
-  <Step title="Check Active Models">
-    Visit [dria.co/edge-ai](https://dria.co/edge-ai) and check all the models listed under "Tasks Completed by Models (7 Days)" and the live "Data Generation Logs". The currently supported models are also listed below.
-  </Step>
-  <Step title="Identify High-Demand Models">
-    Observe which models have been getting the most tasks recently from these two sections.
-  </Step>
-  <Step title="Test Your Hardware">
-    For locally hosted models, run `dkn-compute-launcher measure` to test them on your device.
-  </Step>
-  <Step title="Check Performance">
-    If a model achieves an **Eval TPS** score higher than **15**, your device can likely run that model effectively for the network.
-  </Step>
-  <Step title="Start Running the Model">
-    Configure your settings with `dkn-compute-launcher settings` to run high-demand models that your hardware can support.
-  </Step>
-</Steps>
 
 ## Supported Models
 
-Here is the list of currently supported models you can run. All models are served locally via Ollama and require testing on your hardware using the `dkn-compute-launcher measure` command to ensure they meet the performance requirements.
+`dria-node` includes a built-in registry of 12 models. All models are served locally using llama.cpp — no Ollama required. Each model is downloaded as a GGUF file from HuggingFace during setup.
 
-The model names for use with the launcher are:
+| Model | Type | Default Quant | GGUF Size | Min RAM |
+|:------|:-----|:--------------|:----------|:--------|
+| `qwen3.5:0.8b` | Vision | Q4_K_M | 0.5 GB | ~1 GB |
+| `lfm2.5:1.2b` | Text | Q4_K_M | 0.8 GB | ~1 GB |
+| `lfm2.5-audio:1.5b` | Audio | Q4_0 | 1.0 GB | ~1.5 GB |
+| `lfm2.5-vl:1.6b` | Vision | Q4_0 | 1.2 GB | ~1.5 GB |
+| `qwen3.5:2b` | Vision | Q4_K_M | 1.2 GB | ~2 GB |
+| `nanbeige:3b` | Text | Q4_K_M | 2.0 GB | ~2.5 GB |
+| `locooperator:4b` | Text | Q4_K_M | 2.5 GB | ~3 GB |
+| `qwen3.5:9b` | Vision | Q4_K_M | 6.0 GB | ~7 GB |
+| `lfm2:24b-a2b` | Text (MoE) | Q4_K_M | 14 GB | ~16 GB |
+| `qwen3.5:27b` | Vision | Q4_K_M | 16 GB | ~18 GB |
+| `qwen3.5:35b-a3b` | Vision (MoE) | Q4_K_M | 20 GB | ~22 GB |
+| `nemotron:30b-a3b` | Text (MoE) | Q4_K_M | 24.5 GB | ~27 GB |
 
-- `gemma3:4b`
-- `gemma3:12b`
-- `gemma3:27b`
-- `llama3.3:70b-instruct`
-- `llama3.1:8b-instruct`
-- `llama3.2:1b-instruct`
-- `mistral-nemo:12b`
+### Model Types
 
-## Changing Models
+- **Text** — Standard text generation and instruction following.
+- **Vision** — Multimodal models that can process both text and images.
+- **Audio** — Multimodal models that can process text and audio inputs.
+- **MoE** — Mixture-of-Experts models that activate only a subset of parameters per token, enabling larger models to run efficiently.
 
-<Tabs>
-  <Tab title="Linux / macOS">
-    Run the following command and select models from the menu:
-    
-    ```bash
-    dkn-compute-launcher settings
-    ```
-  </Tab>
-  <Tab title="Windows">
-    Run the following command and select models from the menu:
-    
-    ```powershell
-    dkn-compute-launcher.exe settings
-    ```
-  </Tab>
-</Tabs>
+## How to Choose a Model
 
-## What is TPS?
+<Steps>
+  <Step title="Check Your RAM">
+    Run `dria-node setup` — it will automatically detect your available RAM and filter models that fit your system.
+  </Step>
+  <Step title="Consider Demand">
+    Visit [dria.co/edge-ai](https://dria.co/edge-ai) to see which models are getting the most tasks. Running high-demand models means more task assignments and more earnings.
+  </Step>
+  <Step title="Match Your Hardware">
+    Larger models produce higher-quality output but need more RAM and compute. Pick the largest model your hardware can comfortably run. GPU acceleration significantly improves performance for larger models.
+  </Step>
+  <Step title="Run the Benchmark">
+    During `dria-node setup`, a test inference is run and your TPS (Tokens Per Second) is printed. Higher TPS means faster task completion and better reputation.
+  </Step>
+</Steps>
 
-TPS stands for Tokens Per Second. It's a measure of how fast the AI model can process text. A higher TPS generally means better performance. For Dria, the **Eval TPS** measured by the launcher is the key metric for local models.
+## Quantization
 
-## Hardware Performance Benchmarks
+All models default to **4-bit quantization** (Q4_K_M or Q4_0) for the best balance of quality and resource usage. If you have extra RAM, you can use 8-bit quantization for better output quality:
 
-Below are some performance benchmarks for running supported Ollama models on various cloud GPU configurations.
+```bash
+dria-node start --wallet <KEY> --model qwen3.5:9b --quant Q8_0
+```
 
-<AccordionGroup>
-  <Accordion title="Gemma3 4B">
-    | Configuration | Estimated TPS |
-    | :--- | :--- |
-    | A10 (24GB) | ~65 TPS |
-    | A5000 | ~60 TPS |
-    | A40 | ~60 TPS |
-    | A40 (48GB) | ~60 TPS |
-    | A5000 (24GB) | ~60 TPS |
-  </Accordion>
+<Warning>
+  8-bit quantization roughly doubles the GGUF file size and RAM usage. Make sure your system has enough resources before switching.
+</Warning>
 
-  <Accordion title="Gemma3 12B">
-    | Configuration | Estimated TPS |
-    | :--- | :--- |
-    | A100 SXM (40GB) | ~55 TPS |
-    | A100 SXM (80GB) | ~55 TPS |
-    | A100 PCIe (80GB) | ~50 TPS |
-    | A100 SXM4 | ~50 TPS |
-    | A100 80GB | ~50 TPS |
-  </Accordion>
+## Serving Multiple Models
 
-  <Accordion title="Gemma3 27B">
-    | Configuration | Estimated TPS |
-    | :--- | :--- |
-    | 2× H100 SXM | ~55-60 TPS |
-    | 2× H100 NVLink | ~55 TPS |
-  </Accordion>
+You can serve multiple models from a single node by separating them with commas:
 
-  <Accordion title="Llama 3.1 8B Instruct">
-    | Configuration | Estimated TPS |
-    | :--- | :--- |
-    | A100 SXM (80GB) | ~50 TPS |
-    | A100 SXM (40GB) | ~50 TPS |
-    | A100 SXM4 | ~50 TPS |
-    | A100 80GB | ~50 TPS |
-    | A100 PCIe (80GB) | ~45 TPS |
-  </Accordion>
-  
-  <Accordion title="Llama 3.2 1B Instruct">
-    | Configuration | Estimated TPS |
-    | :--- | :--- |
-    | A10 (24GB) | ~60 TPS |
-    | A40 (48GB) | ~55 TPS |
-    | A40 | ~55 TPS |
-  </Accordion>
+```bash
+dria-node start --wallet <KEY> --model qwen3.5:9b,lfm2.5:1.2b,lfm2.5-audio:1.5b
+```
 
-  <Accordion title="Llama 3.3 70B Instruct">
-    | Configuration | Estimated TPS |
-    | :--- | :--- |
-    | 8× H100 SXM | ~110 TPS |
-    | 4× H100 SXM | ~80 TPS |
-    | 4× H100 NVLink | ~80 TPS |
-    | 4× H100 SXM (80GB) | ~80 TPS |
-  </Accordion>
+This lets your node handle text, vision, and audio tasks. Make sure your system has enough RAM for all selected models.
 
-  <Accordion title="Mistral Nemo 12B Instruct">
-    | Configuration | Estimated TPS |
-    | :--- | :--- |
-    | A100 SXM4 | ~130 TPS |
-    | A100 SXM (80GB) | ~130 TPS |
-    | A100 SXM (40GB) | ~125 TPS |
-    | A100 80GB | ~125 TPS |
-  </Accordion>
-</AccordionGroup>
+## Dynamic Model Updates
 
- 
+The Dria router can push model registry updates to your node at runtime. When new models are added to the network, your node can download and load them automatically without restarting.
