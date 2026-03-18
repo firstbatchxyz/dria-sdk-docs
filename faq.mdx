@@ -1,0 +1,123 @@
+---
+title: Frequently Asked Questions
+description: "Find answers to common questions about the Dria network"
+---
+
+## Node Setup
+
+<Accordion title="Do I need Ollama?">
+  **No.** The new `dria-node` binary runs models natively using llama.cpp. Ollama is no longer required. Simply run `dria-node setup` to download and configure your model.
+</Accordion>
+
+<Accordion title="What are the minimum system requirements?">
+  - **RAM:** At least ~1 GB for the smallest model (`qwen3.5:0.8b`), up to ~27 GB for the largest (`nemotron:30b-a3b`)
+  - **Disk:** 0.5 GB to 24.5 GB for model files depending on model choice
+  - **Network:** Outbound UDP port 4001 (QUIC)
+  - **OS:** macOS (Intel + Apple Silicon), Linux (x86_64, arm64), Windows (x86_64)
+
+  See [Selecting Models](/selecting-models) for the full model table with RAM requirements.
+</Accordion>
+
+<Accordion title="How do I install dria-node?">
+  The fastest way:
+
+  - **macOS/Linux:** `brew install firstbatchxyz/dkn/dria-node` or `curl -fsSL https://raw.githubusercontent.com/firstbatchxyz/dkn-compute-node/master/install.sh | sh`
+  - **Windows:** `irm https://raw.githubusercontent.com/firstbatchxyz/dkn-compute-node/master/install.ps1 | iex`
+
+  See [Running a Node](/how-to-run) for all installation methods.
+</Accordion>
+
+## Running a Node
+
+<Accordion title="How do I check if my node is online?">
+  Visit the [Dria Edge AI Dashboard](https://dria.co/edge-ai) and log in with the wallet associated with your node. The dashboard shows your node's status, recent activity, and earned points.
+</Accordion>
+
+<Accordion title="Can I run multiple nodes?">
+  Yes. You can run multiple nodes on the same machine or network, but **each node must use a unique private key (wallet)**. Using the same key for multiple nodes will cause conflicts with task assignment and rewards.
+</Accordion>
+
+<Accordion title="What ports do I need open?">
+  Your node needs outbound access on **UDP port 4001** to connect to the Dria router via QUIC. No inbound ports need to be opened.
+</Accordion>
+
+<Accordion title="Does dria-node support GPU acceleration?">
+  Yes. `dria-node` supports:
+  - **Apple Metal** (macOS) — works automatically on Apple Silicon
+  - **NVIDIA CUDA** — use the CUDA build
+  - **AMD ROCm 6.x** — use the ROCm install script (Linux x86_64 only)
+
+  Use `--gpu-layers -1` to offload all model layers to GPU.
+</Accordion>
+
+<Accordion title="How does auto-update work?">
+  `dria-node` checks for new versions on GitHub Releases at startup. Patch bumps (e.g. 0.7.3 → 0.7.4) show a warning. Minor or major version bumps trigger an automatic update to keep your node compatible with the network. You can skip this with `--skip-update`.
+</Accordion>
+
+## Earning Points
+
+<Accordion title="Why am I not earning points?">
+  Common reasons:
+
+  1. **No tasks** — There may be low demand for the model(s) you're running. Check the dashboard and consider switching to higher-demand models.
+  2. **Node offline** — Make sure `dria-node` is running and your network allows outbound UDP on port 4001.
+  3. **Low reputation** — New nodes start with a neutral reputation score. Complete tasks consistently to build it up. Failing or timing out on tasks reduces your score.
+
+  Refer to the [Rewards](/rewards) page for details on the earning mechanism.
+</Accordion>
+
+<Accordion title="How often are $DRIA Points updated?">
+  Points on the [Dria Edge AI Dashboard](https://dria.co/edge-ai) are updated in near real-time as your node completes tasks.
+</Accordion>
+
+## Using the Network (CLI)
+
+<Accordion title="How do I use Dria for inference?">
+  Install the Dria CLI:
+
+  ```bash
+  npm install -g @dria/cli
+  dria init
+  ```
+
+  Then run inference:
+
+  ```bash
+  dria generate -m qwen3.5:9b "explain quantum computing"
+  ```
+
+  See the [CLI Guide](/cli) for full documentation.
+</Accordion>
+
+<Accordion title="How does payment work for using the network?">
+  The CLI uses USDC credits on the Base network. Top up with:
+
+  ```bash
+  dria topup --amount 10
+  ```
+
+  This uses the x402 payment protocol with gasless EIP-712 signed transfers. See [CLI Guide](/cli) for details.
+</Accordion>
+
+## Troubleshooting
+
+<Accordion title="My node keeps disconnecting">
+  The node automatically reconnects with exponential backoff (1s, 2s, 4s, 8s, 16s). If it repeatedly fails:
+
+  1. Check your internet connection
+  2. Ensure outbound UDP port 4001 is not blocked by a firewall
+  3. Try setting `RUST_LOG=debug` for more detailed logs
+  4. Make sure you're running the latest version (`dria-node` auto-updates by default)
+</Accordion>
+
+<Accordion title="Model download fails">
+  Models are downloaded from HuggingFace. If the download fails:
+
+  1. Check your internet connection
+  2. Ensure you have enough disk space in `~/.dria/models/`
+  3. Try running `dria-node setup` again — it will resume where it left off
+</Accordion>
+
+<Accordion title="Should I avoid WSL on Windows?">
+  We recommend using native Windows (PowerShell) instead of WSL for the best experience. If you encounter issues on WSL, switch to the native Windows installation method.
+</Accordion>

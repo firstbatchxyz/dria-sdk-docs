@@ -1,0 +1,169 @@
+---
+title: Running a Node
+description: "Install and run the Dria Compute Node to serve AI models and earn rewards"
+---
+
+## Introduction
+
+The **Dria Compute Node** (`dria-node`) is a single Rust binary that lets you serve AI models on the Dria network and earn rewards. It runs models locally using llama.cpp — no Ollama or external dependencies required.
+
+<Check>**Single binary** — no Docker, no Ollama, no complex setup.</Check>
+<Check>**Built-in model management** — downloads, caches, and benchmarks GGUF models automatically.</Check>
+<Check>**GPU acceleration** — supports Apple Metal, NVIDIA CUDA, and AMD ROCm out of the box.</Check>
+<Check>**Auto-updates** — checks for new versions on startup and updates itself.</Check>
+<Check>**Reconnection** — automatically reconnects with exponential backoff if the connection drops.</Check>
+
+## Installation
+
+<Tabs>
+  <Tab title="macOS / Linux (Homebrew)">
+    ```bash
+    brew install firstbatchxyz/dkn/dria-node
+    ```
+  </Tab>
+  <Tab title="macOS / Linux (Shell Script)">
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/firstbatchxyz/dkn-compute-node/master/install.sh | sh
+    ```
+  </Tab>
+  <Tab title="Windows (PowerShell)">
+    Open PowerShell and run:
+
+    ```powershell
+    irm https://raw.githubusercontent.com/firstbatchxyz/dkn-compute-node/master/install.ps1 | iex
+    ```
+  </Tab>
+  <Tab title="AMD ROCm (Linux)">
+    For AMD GPUs with ROCm 6.x on Linux x86_64:
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/firstbatchxyz/dkn-compute-node/master/install-rocm.sh | bash
+    ```
+  </Tab>
+  <Tab title="Build from Source">
+    Requires the [Rust toolchain](https://www.rust-lang.org/), cmake, and build-essential (Linux) or Visual Studio Build Tools + LLVM (Windows).
+
+    ```bash
+    git clone https://github.com/firstbatchxyz/dkn-compute-node.git
+    cd dkn-compute-node
+    cargo build --release
+    ```
+
+    **Optional GPU feature flags:**
+    ```bash
+    # Apple Metal (macOS)
+    cargo build --release --features metal
+
+    # NVIDIA CUDA
+    cargo build --release --features cuda
+
+    # AMD ROCm
+    cargo build --release --features rocm
+    ```
+  </Tab>
+</Tabs>
+
+## Setup
+
+Run the interactive setup wizard to select and download a model:
+
+```bash
+dria-node setup
+```
+
+The wizard will:
+1. **Detect your available RAM** and filter models that fit your system.
+2. **Let you pick a model** from the supported list.
+3. **Download the GGUF model file** from HuggingFace.
+4. **Run a test inference** and print your benchmark TPS.
+
+<Tip>
+  Models are cached in `~/.dria/models/`. You only need to download each model once.
+</Tip>
+
+## Starting Your Node
+
+Once setup is complete, start your node:
+
+```bash
+dria-node start --wallet <YOUR_PRIVATE_KEY> --model <MODEL_NAME>
+```
+
+For example:
+
+```bash
+dria-node start --wallet abc123...def --model qwen3.5:9b
+```
+
+You can also serve **multiple models** by separating them with commas:
+
+```bash
+dria-node start --wallet abc123...def --model qwen3.5:9b,lfm2.5:1.2b
+```
+
+<Warning>
+  Your wallet is an Ethereum-compatible private key (64 hex characters). This is used for node identity, authentication, and reward tracking. **Never share your private key.**
+</Warning>
+
+Stop the node with <kbd>CTRL+C</kbd> (Linux/Windows) or <kbd>CMD+C</kbd> (macOS). The node will gracefully drain in-flight tasks before shutting down.
+
+## Configuration
+
+All flags can also be set via environment variables:
+
+| Flag | Env Var | Default | Description |
+|:-----|:--------|:--------|:------------|
+| `--wallet` | `DRIA_WALLET` | *(required)* | Ethereum private key (hex, 32 bytes) |
+| `--model` | `DRIA_MODELS` | *(required)* | Model(s) to serve, comma-separated |
+| `--gpu-layers` | `DRIA_GPU_LAYERS` | `0` (CPU only) | GPU layers to offload (`-1` = all) |
+| `--max-concurrent` | `DRIA_MAX_CONCURRENT` | `1` | Max parallel inference tasks |
+| `--data-dir` | `DRIA_DATA_DIR` | `~/.dria` | Directory for cached models |
+| `--quant` | `DRIA_QUANT` | Per-model default | Override GGUF quantization (e.g. `Q8_0`) |
+| `--context-size` | `DRIA_CONTEXT_SIZE` | Model's native | Max context window (tokens) |
+| `--kv-quant` | `DRIA_KV_QUANT` | `q8_0` | KV cache quantization (`f16`, `f32`, `q8_0`, `q4_0`, `q4_1`, `q5_0`, `q5_1`) |
+| `--router-url` | `DRIA_ROUTER_URL` | `quic.dria.co:4001` | Router URL |
+| `--skip-update` | `DRIA_SKIP_UPDATE` | `false` | Skip auto-update check on startup |
+
+<Info>
+  Set `RUST_LOG=debug` for verbose logging during troubleshooting.
+</Info>
+
+## GPU Acceleration
+
+`dria-node` supports GPU acceleration for faster inference:
+
+- **Apple Metal** — Enabled automatically on macOS with Apple Silicon.
+- **NVIDIA CUDA** — Use the CUDA build or `--features cuda` when building from source.
+- **AMD ROCm** — Use the ROCm install script or `--features rocm` when building from source.
+
+To offload all model layers to GPU:
+
+```bash
+dria-node start --wallet <KEY> --model qwen3.5:9b --gpu-layers -1
+```
+
+## System Requirements
+
+- **OS:** macOS (Intel + Apple Silicon), Linux (x86_64, arm64), Windows (x86_64)
+- **RAM:** Minimum ~1 GB (for smallest model) to ~27 GB (for largest model) — see [Selecting Models](/selecting-models) for details
+- **Disk:** Space for GGUF model files (0.5 GB to 24.5 GB depending on model)
+- **Network:** Outbound UDP port 4001 (QUIC connection to router)
+- **GPU (optional):** Apple Metal, NVIDIA CUDA, or AMD ROCm 6.x
+
+## How It Works
+
+Your node connects to the Dria router network via **QUIC** (a fast, encrypted UDP-based protocol). Here's what happens:
+
+1. **Authentication** — The router sends a random challenge. Your node signs it with your private key to prove identity.
+2. **Registration** — Your node announces which model(s) it can serve.
+3. **Task assignment** — The router forwards inference requests from users to your node based on model availability and capacity.
+4. **Inference** — Your node runs the model locally and streams results back.
+5. **Backpressure** — If your node is at capacity, it rejects new tasks and the router re-routes to another node.
+
+<Info>
+  The node supports text, vision (image), and audio inference depending on the model. See [Selecting Models](/selecting-models) for model capabilities.
+</Info>
+
+## Running Multiple Nodes
+
+You can run multiple nodes on the same machine or network, but **each node must use a unique private key (wallet)**. Using the same key for multiple nodes will cause conflicts.

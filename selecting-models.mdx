@@ -1,0 +1,73 @@
+---
+title: Selecting Models
+description: "Choose the right model for your hardware and maximize your earnings"
+---
+
+## Supported Models
+
+`dria-node` includes a built-in registry of 12 models. All models are served locally using llama.cpp — no Ollama required. Each model is downloaded as a GGUF file from HuggingFace during setup.
+
+| Model | Type | Default Quant | GGUF Size | Min RAM |
+|:------|:-----|:--------------|:----------|:--------|
+| `qwen3.5:0.8b` | Vision | Q4_K_M | 0.5 GB | ~1 GB |
+| `lfm2.5:1.2b` | Text | Q4_K_M | 0.8 GB | ~1 GB |
+| `lfm2.5-audio:1.5b` | Audio | Q4_0 | 1.0 GB | ~1.5 GB |
+| `lfm2.5-vl:1.6b` | Vision | Q4_0 | 1.2 GB | ~1.5 GB |
+| `qwen3.5:2b` | Vision | Q4_K_M | 1.2 GB | ~2 GB |
+| `nanbeige:3b` | Text | Q4_K_M | 2.0 GB | ~2.5 GB |
+| `locooperator:4b` | Text | Q4_K_M | 2.5 GB | ~3 GB |
+| `qwen3.5:9b` | Vision | Q4_K_M | 6.0 GB | ~7 GB |
+| `lfm2:24b-a2b` | Text (MoE) | Q4_K_M | 14 GB | ~16 GB |
+| `qwen3.5:27b` | Vision | Q4_K_M | 16 GB | ~18 GB |
+| `qwen3.5:35b-a3b` | Vision (MoE) | Q4_K_M | 20 GB | ~22 GB |
+| `nemotron:30b-a3b` | Text (MoE) | Q4_K_M | 24.5 GB | ~27 GB |
+
+### Model Types
+
+- **Text** — Standard text generation and instruction following.
+- **Vision** — Multimodal models that can process both text and images.
+- **Audio** — Multimodal models that can process text and audio inputs.
+- **MoE** — Mixture-of-Experts models that activate only a subset of parameters per token, enabling larger models to run efficiently.
+
+## How to Choose a Model
+
+<Steps>
+  <Step title="Check Your RAM">
+    Run `dria-node setup` — it will automatically detect your available RAM and filter models that fit your system.
+  </Step>
+  <Step title="Consider Demand">
+    Visit [dria.co/edge-ai](https://dria.co/edge-ai) to see which models are getting the most tasks. Running high-demand models means more task assignments and more earnings.
+  </Step>
+  <Step title="Match Your Hardware">
+    Larger models produce higher-quality output but need more RAM and compute. Pick the largest model your hardware can comfortably run. GPU acceleration significantly improves performance for larger models.
+  </Step>
+  <Step title="Run the Benchmark">
+    During `dria-node setup`, a test inference is run and your TPS (Tokens Per Second) is printed. Higher TPS means faster task completion and better reputation.
+  </Step>
+</Steps>
+
+## Quantization
+
+All models default to **4-bit quantization** (Q4_K_M or Q4_0) for the best balance of quality and resource usage. If you have extra RAM, you can use 8-bit quantization for better output quality:
+
+```bash
+dria-node start --wallet <KEY> --model qwen3.5:9b --quant Q8_0
+```
+
+<Warning>
+  8-bit quantization roughly doubles the GGUF file size and RAM usage. Make sure your system has enough resources before switching.
+</Warning>
+
+## Serving Multiple Models
+
+You can serve multiple models from a single node by separating them with commas:
+
+```bash
+dria-node start --wallet <KEY> --model qwen3.5:9b,lfm2.5:1.2b,lfm2.5-audio:1.5b
+```
+
+This lets your node handle text, vision, and audio tasks. Make sure your system has enough RAM for all selected models.
+
+## Dynamic Model Updates
+
+The Dria router can push model registry updates to your node at runtime. When new models are added to the network, your node can download and load them automatically without restarting.
